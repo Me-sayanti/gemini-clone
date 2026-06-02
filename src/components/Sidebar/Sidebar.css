@@ -55,3 +55,51 @@
   padding-right: 10px;
   cursor: pointer;
 }
+.recent {
+  display: flex;
+  flex-direction: column;
+  animation: fadeIn 1.5s;
+}
+
+.recent-title {
+  margin-top: 30px;
+  margin-bottom: 20px;
+  font-size: 15px;
+  color: #282828;
+}
+
+.recent-entry {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 50px;
+  color: #282828;
+  cursor: pointer;
+}
+
+.recent-entry:hover {
+  background-color: #e2e6eb;
+}
+
+.recent-entry img {
+  width: 20px;
+}
+
+.recent-entry p {
+  font-size: 14px;
+}
+
+.clear-btn {
+  border: none;
+  outline: none;
+  background-color: #f1f4f9;
+  padding: 10px 14px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.clear-btn:hover {
+  background-color: #e2e6eb;
+}

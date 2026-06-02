@@ -1,46 +1,87 @@
-import { GoogleGenAI, ThinkingLevel } from "@google/genai";
+import { createContext, useEffect, useState } from "react";
+import { askGemini } from "../config/gemini";
 
-const ai = new GoogleGenAI({
-  apiKey: import.meta.env.VITE_GEMINI_API_KEY,
-});
+export const Context = createContext();
 
-export async function askGemini(prompt) {
-  try {
-    const response = await ai.models.generateContentStream({
-      model: "gemini-3-flash-preview",
-      config: {
-        thinkingConfig: {
-          thinkingLevel: ThinkingLevel.HIGH,
-        },
-      },
-      contents: [
-        {
-          role: "user",
-          parts: [
-            {
-              text: prompt,
-            },
-          ],
-        },
-      ],
-    });
+const ContextProvider = (props) => {
+  const [input, setInput] = useState("");
+  const [recentPrompt, setRecentPrompt] = useState("");
+  const [resultData, setResultData] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [showResult, setShowResult] = useState(false);
 
-    let result = "";
+  // Store all previous prompt + response
+  const [prevChats, setPrevChats] = useState([]);
 
-    for await (const chunk of response) {
-      if (chunk.text) {
-        result += chunk.text;
-      }
+  // Load previous chats from localStorage when page opens
+  useEffect(() => {
+    const savedChats = localStorage.getItem("geminiChats");
+
+    if (savedChats) {
+      setPrevChats(JSON.parse(savedChats));
+    }
+  }, []);
+
+  const onSent = async (prompt) => {
+    const finalPrompt = prompt || input;
+
+    if (!finalPrompt.trim()) {
+      return;
     }
 
-    return result;
-  } catch (error) {
-    console.error("Gemini API Error:", error);
+    setLoading(true);
+    setShowResult(true);
+    setRecentPrompt(finalPrompt);
+    setResultData("");
 
-    if (error.message?.includes("429")) {
-      return "API quota exceeded. Please wait or check your Gemini API quota.";
-    }
+    const response = await askGemini(
+      finalPrompt +
+        "\n\nGive the answer in clean Markdown format with headings, bold points, bullet points, and code blocks where needed.",
+    );
 
-    return "Something went wrong.";
-  }
-}
+    setResultData(response);
+
+    const newChat = {
+      prompt: finalPrompt,
+      response: response,
+    };
+
+    const updatedChats = [...prevChats, newChat];
+
+    setPrevChats(updatedChats);
+    localStorage.setItem("geminiChats", JSON.stringify(updatedChats));
+
+    setLoading(false);
+    setInput("");
+  };
+
+  const loadPreviousChat = (chat) => {
+    setRecentPrompt(chat.prompt);
+    setResultData(chat.response);
+    setShowResult(true);
+  };
+
+  const clearChats = () => {
+    setPrevChats([]);
+    localStorage.removeItem("geminiChats");
+  };
+
+  const contextValue = {
+    input,
+    setInput,
+    recentPrompt,
+    resultData,
+    loading,
+    showResult,
+    onSent,
+    prevChats,
+    loadPreviousChat,
+    clearChats,
+  };
+
+  return (
+    <Context.Provider value={contextValue}>{props.children}</Context.Provider>
+  );
+};
+
+export default ContextProvider;

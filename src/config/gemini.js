@@ -1,46 +1,28 @@
-import { GoogleGenAI, ThinkingLevel } from "@google/genai";
+import { GoogleGenAI } from "@google/genai";
+
+const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+
+console.log("API Key Loaded:", apiKey ? "Yes" : "No");
+console.log("API Key First Letters:", apiKey?.slice(0, 2));
 
 const ai = new GoogleGenAI({
-  apiKey: import.meta.env.VITE_GEMINI_API_KEY,
+  apiKey,
 });
 
 export async function askGemini(prompt) {
   try {
-    const response = await ai.models.generateContentStream({
-      model: "gemini-3-flash-preview",
-      config: {
-        thinkingConfig: {
-          thinkingLevel: ThinkingLevel.HIGH,
-        },
-      },
-      contents: [
-        {
-          role: "user",
-          parts: [
-            {
-              text: prompt,
-            },
-          ],
-        },
-      ],
+    if (!apiKey) {
+      return "API key is missing. Please check your .env file.";
+    }
+
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt,
     });
 
-    let result = "";
-
-    for await (const chunk of response) {
-      if (chunk.text) {
-        result += chunk.text;
-      }
-    }
-
-    return result;
+    return response.text;
   } catch (error) {
-    console.error("Gemini API Error:", error);
-
-    if (error.message?.includes("429")) {
-      return "API quota exceeded. Please wait for some time or check your Gemini API billing/quota.";
-    }
-
-    return "Something went wrong. Please try again.";
+    console.error("Gemini API Error Full:", error);
+    return error.message || "Something went wrong. Please try again.";
   }
 }
